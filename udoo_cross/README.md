@@ -85,7 +85,7 @@ git clone https://github.com/RobertCNelson/armv7-multiplatform
 cd armv7-multiplatform/
 ```
 
-  * For v4.14.x (Longterm 4.14.x):
+  - For v4.14.x (Longterm 4.14.x):
 
   ```bash
   git checkout origin/v4.14.x -b tmp
@@ -127,131 +127,172 @@ cd armv7-multiplatform/
 ./build_kernel.sh
 ```
 
-Root File System
-Debian 10
-User 	Password
-debian 	temppwd
-root 	root
+## Root File System
+### Debian 10
 
-Download:
+  * User: Password
+  * debian: temppwd
+  * root: root
 
-#user@localhost:~$
+- Download:
+
+```bash
 wget -c https://rcn-ee.com/rootfs/eewiki/minfs/debian-10.9-minimal-armhf-2021-04-14.tar.xz
+```
 
-Verify:
+- Verify:
 
-#user@localhost:~$
+```bash
 sha256sum debian-10.9-minimal-armhf-2021-04-14.tar.xz
+```
+sha256sum output:
 
-#sha256sum output:
+```bash
 268ae963a067f13578858a9203ec6a0668d26c707c2fd5e42d0ad3ead5dc9289  debian-10.9-minimal-armhf-2021-04-14.tar.xz
+```
+- Extract:
 
-Extract:
-
-#user@localhost:~$
+```bash
 tar xf debian-10.9-minimal-armhf-2021-04-14.tar.xz
+```
 
-Ubuntu 18.04 LTS
-User 	Password
-ubuntu 	temppwd
+### Ubuntu 18.04 LTS
+  * User 	Password
+  * ubuntu 	temppwd
 
-Download:
+- Download:
 
-#user@localhost:~$
+```bash
 wget -c https://rcn-ee.com/rootfs/eewiki/minfs/ubuntu-20.04.2-minimal-armhf-2021-04-14.tar.xz
-
+```
 Verify:
 
-#user@localhost:~$
+```bash
 sha256sum ubuntu-20.04.2-minimal-armhf-2021-04-14.tar.xz
+```
 
-#sha256sum output:
+sha256sum output:
+```bash
 46702f198730d6edeace72f6d3f9c41b7e097c78c17cb202cc0beee551021783  ubuntu-20.04.2-minimal-armhf-2021-04-14.tar.xz
+```
+- Extract:
 
-Extract:
-
-#user@localhost:~$
+```bash
 tar xf ubuntu-20.04.2-minimal-armhf-2021-04-14.tar.xz
+```
 
-Setup microSD card
+## Setup microSD card
 
 We need to access the External Drive to be utilized by the target device. Run lsblk to help figure out what linux device has been reserved for your External Drive.
 
-#Example: for DISK=/dev/sdX
+### Example: for DISK=/dev/sdX
+
+```bash
 lsblk
+```
+
+```
 NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
 sda      8:0    0 465.8G  0 disk
 ├─sda1   8:1    0   512M  0 part /boot/efi
 └─sda2   8:2    0 465.3G  0 part /                <- Development Machine Root Partition
 sdb      8:16   1   962M  0 disk                  <- microSD/USB Storage Device
 └─sdb1   8:17   1   961M  0 part                  <- microSD/USB Storage Partition
+```
 
-#Thus you would use:
+Thus you would use:
+```bash
 export DISK=/dev/sdb
+```
 
-#Example: for DISK=/dev/mmcblkX
+### Example: for DISK=/dev/mmcblkX
+
+```bash
 lsblk
+```
+
+```
 NAME      MAJ:MIN   RM   SIZE RO TYPE MOUNTPOINT
 sda         8:0      0 465.8G  0 disk
 ├─sda1      8:1      0   512M  0 part /boot/efi
 └─sda2      8:2      0 465.3G  0 part /                <- Development Machine Root Partition
 mmcblk0     179:0    0   962M  0 disk                  <- microSD/USB Storage Device
 └─mmcblk0p1 179:1    0   961M  0 part                  <- microSD/USB Storage Partition
+```
 
-#Thus you would use:
+Thus you would use:
+```bash
 export DISK=/dev/mmcblk0
+```
+### Erase partition table/labels on microSD card:
 
-Erase partition table/labels on microSD card:
-
+```bash
 sudo dd if=/dev/zero of=${DISK} bs=1M count=10
+```
 
-Install Bootloader:
+### Install Bootloader:
 
-#user@localhost:~$
+```bash
 sudo dd if=./u-boot/SPL of=${DISK} seek=1 bs=1k
 sudo dd if=./u-boot/u-boot.img of=${DISK} seek=69 bs=1k
+```
 
-Create Partition Layout:
+### Create Partition Layout:
 With util-linux v2.26, sfdisk was rewritten and is now based on libfdisk.
 
-#Check the version of sfdisk installed on your pc
-sudo sfdisk --version
+ - Check the version of sfdisk installed on your pc
+ ```bash
+ sudo sfdisk --version
+ ```
 
-#Example Output
-sfdisk from util-linux 2.27.1
+ Example Output
+ ```bash
+  sfdisk from util-linux 2.27.1
+ ```
+ 
+- sfdisk >= 2.26.x
 
-#sfdisk >= 2.26.x
+```bash
 sudo sfdisk ${DISK} <<-__EOF__
 1M,,L,*
 __EOF__
+```
 
-#sfdisk <= 2.25.x
+- sfdisk <= 2.25.x
+```bash
 sudo sfdisk --unit M ${DISK} <<-__EOF__
 1,,L,*
 __EOF__
+```
 
-Format Partition:
+- Format Partition:
 
 for: DISK=/dev/mmcblkX
+```bash
 sudo mkfs.ext4 -L rootfs ${DISK}p1
- 
+```
+
 for: DISK=/dev/sdX
+```bash
 sudo mkfs.ext4 -L rootfs ${DISK}1
+```
 
-Mount Partition:
-On most systems these partitions may be auto-mounted…
+- Mount Partition:
+ On most systems these partitions may be auto-mounted…
+ ```bash
+ sudo mkdir -p /media/rootfs/
+ ```
+ for: DISK=/dev/mmcblkX
+ ```bash
+ sudo mount ${DISK}p1 /media/rootfs/
+ ```
+ for: DISK=/dev/sdX
+ ```bash
+ sudo mount ${DISK}1 /media/rootfs/
+ ```
+- Install Kernel and Root File System
 
-sudo mkdir -p /media/rootfs/
- 
-for: DISK=/dev/mmcblkX
-sudo mount ${DISK}p1 /media/rootfs/
- 
-for: DISK=/dev/sdX
-sudo mount ${DISK}1 /media/rootfs/
-
-Install Kernel and Root File System
-
-To help new users, since the kernel version can change on a daily basis. The kernel building scripts listed on this page will now give you a hint of what kernel version was built.
+ To help new users, since the kernel version can change on a daily basis. The kernel building scripts listed on this page will now give you a hint of what kernel version was     built.
 
 -----------------------------
 Script Complete
