@@ -64,7 +64,7 @@ cd u-boot/
 
 ```
 
--Configure and Build:
+- Configure and Build:
 
 ```bash
 
